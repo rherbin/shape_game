@@ -3,33 +3,38 @@
 #include <time.h>
 #include "ansi_escape.h"
 
+#define max(a,b) (a>=b?a:b)
+#define min(a,b) (a<=b?a:b)
+
 typedef struct forme{
-    struct forme * next;
-    struct forme * prev;
     char type; //R = ROND, C = CARRE, L = LOSANGE, T = TRIANGLE
     char col; //1 = ROUGE, 2 = BLEU, 3 = JAUNE, 4 = VERT
 } Forme;
 
+typedef struct maillon{
+    struct maillon * next;
+    struct maillon * prev;
+    Forme * f;
+} Maillon;
+
 typedef struct list{
     int length;
-    Forme * first;
+    Maillon * first;
 } Liste;
 
 void printList(Liste * l){
     if (l->length == 0){
         return;
     }
-    Forme * f = l->first;
+    Maillon * m = l->first;
     for (int i = 0; i<l->length; i++){
-        printf("\033[3%dm%c\x1b[0m ", f->col, f->type);
-        f = f->next;
+        printf("\033[3%dm%c\x1b[0m ", m->f->col, m->f->type);
+        m = m->next;
     }
 }
 
 void getForme(char type, char col, Forme * f){
     //Forme * f = malloc(sizeof(Forme));
-    f->next = NULL;
-    f->prev = NULL;
     f->col = col;
     f->type = type;
     //return f;
@@ -53,78 +58,104 @@ Liste * getList(void){
 void appendListe(Liste * l, Forme * f2, char pos){
     Forme * f = malloc(sizeof(Forme));
     getForme(f2->type, f2->col, f);
+    Maillon * m = malloc(sizeof(Maillon));
+    m->f = f;
     if (l->length == 0){
-        l->first = f;
-        f->next = f;
-        f->prev = f;
+        l->first = m;
+        m->next = m;
+        m->prev = m;
         l->length++;
         return;
     }
-    f->next = l->first;
-    f->prev = l->first->prev;
-    l->first->prev->next = f;
-    l->first->prev = f;
+    m->next = l->first;
+    m->prev = l->first->prev;
+    l->first->prev->next = m;
+    l->first->prev = m;
     if (pos == 0){
-        l->first = f;
+        l->first = m;
     }
     l->length++;
 }
 
-int checkListe(Liste * l, int * ID){
-    int simC = 0;
-    int simT = 0;
-    char prevC = '0';
-    char prevT = '0';
-    Forme * f = l->first;
+void remListe(Liste * l, Forme * rem){
+    Maillon * m = l->first;
+    if (m->f == rem){
+        l->first->prev->next = l->first->next;
+        l->first->next->prev = l->first->prev;
+        l->first = l->first->next;
+        free(m);
+        l->length-=1;
+        return;
+    }
+    m = m->next;
+    for(int i = 0; i<l->length-1; i++){
+        if (m->f == rem){
+            m->prev->next = m->next;
+            m->next->prev = m->prev;
+            free(m);
+            l->length -= 1;
+            return;
+        }
+        m = m->next;
+    }
+}
 
-    for (*ID = 0; *ID < l->length; (*ID)++){
-        if (simC == 3){
-            f = f->next;
-            (*ID)++;
-            while(*ID < l->length-2 && f->col == prevC){
-                (*ID)++;
-                simC++;
-                f = f->next;
+int checkListe(Liste * l, Forme ** ID){
+
+    int simC = 1;
+    int simT = 1;
+    char prevC = ' ';
+    char prevT = ' ';
+    Maillon * m = l->first;
+
+    for (int i = 0; i < l->length; i++){
+
+        if (m->f->col == prevC){
+            simC++;
+        } else if (simC>=3) {
+            for (int j = 0; j<simC; j++){
+                m = m->prev;
+                ID[j] = m->f;
             }
             return simC;
-        }
-        
-        if (simT == 3){
-            f = f->next;
-            (*ID)++;
-            while(*ID < l->length-2 && f->type == prevT){
-                (*ID)++;
-                simT++;
-                f = f->next;
-            }
-            return simT;
-        }
-
-        if (f->col == prevC){
-            simC++;
         } else {
             simC = 1;
-            prevC = f->col;
+            prevC = m->f->col;
         }
 
-        if (f->type == prevT){
+        if (m->f->type == prevT){
             simT++;
+            ID[simT-1] = m->f;
+        } else if (simT>=3) {
+            for (int j = 0; j<simT; j++){
+                m = m->prev;
+                ID[j] = m->f;
+            }
+            return simT;
         } else {
             simT = 1;
-            prevT = f->type;
+            prevT = m->f->type;
         }
-
-        f = f->next;
+        m = m->next;
+    }
+    if (simC>= 3 || simT>=3){
+        for (int i = 0; i<max(simC, simT); i++){
+            m = m->prev;
+            ID[i] = m->f;
+        }
+        return max(simC,simT);
     }
     return 0;
 }
 
 void freeListe(Liste* l){
-    Forme * f = l->first->next;
+    Maillon * m = l->first->next;
     for (int i = 0; i < l->length-1; i++){
-        f = f->next;
-        free(f->prev);
+        m = m->next;
+        free(m->prev->f);
+        free(m->prev);
     }
+    free(l->first->f);
     free(l->first);
 }
 
@@ -132,7 +163,7 @@ void mainloopASCII(){
     int score = 0;
     int nscore = 0;
     char move;
-    int * ID = malloc(sizeof(int));
+    Forme ** ID = malloc(5*sizeof(Forme *));
 
     Liste * mainlist = getList();
 
@@ -163,19 +194,22 @@ void mainloopASCII(){
         printf("\n\n\n\n");
         printf("=>\033[3%dm%c\x1b[0m<=     next : \033[3%dm%c\x1b[0m\n", current->col, current->type, next->col, next->type);
 
-        scanf("%c", &move);
-        getchar();
-
+        move = '0';
+        while(move != 'd' && move != 'g'){
+            scanf("%c", &move);
+            getchar();
+        }
+        
         if (move == 'g'){
             appendListe(mainlist, current, 0);
         } else if (move == 'd'){
             appendListe(mainlist, current, 1);
         }
-        printf("Checklist");
-        *ID = 1;
-        printf("AfterID");
         nscore = checkListe(mainlist, ID);
         score += nscore;
+        for (int i = 0; i<nscore; i++){ 
+            remListe(mainlist, ID[i]);
+        }
     }
 
     freeListe(mainlist);
