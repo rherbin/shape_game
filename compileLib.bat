@@ -1,0 +1,1 @@
+gcc ./modules/utils.c ./modules/ansi_escape.c train.c -fPIC -shared -o lib.so -Wall

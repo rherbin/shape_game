@@ -1,216 +1,213 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "ansi_escape.h"
+#include "./modules/ansi_escape.h"
+#include"./modules/utils.h"
 
 #define max(a,b) (a>=b?a:b)
 #define min(a,b) (a<=b?a:b)
 
-typedef struct forme{
-    char type; //R = ROND, C = CARRE, L = LOSANGE, T = TRIANGLE
-    char col; //1 = ROUGE, 2 = BLEU, 3 = JAUNE, 4 = VERT
-} Forme;
+Liste * mainlist;
+Liste * circ;
+Liste * squa;
+Liste * los;
+Liste * tri;
+Liste * red;
+Liste * blue;
+Liste * yell;
+Liste * green;
 
-typedef struct maillon{
-    struct maillon * next;
-    struct maillon * prev;
-    Forme * f;
-} Maillon;
+void remAllListe(Forme ** rem, int len){
+    for (int i = 0; i<len; i++){
+        remListe(mainlist, rem[i]);
 
-typedef struct list{
-    int length;
-    Maillon * first;
-} Liste;
+        remListe(tri, rem[i]);
+        remListe(squa, rem[i]);
+        remListe(circ, rem[i]);
+        remListe(los, rem[i]);
 
-void printList(Liste * l){
-    if (l->length == 0){
-        return;
-    }
-    Maillon * m = l->first;
-    for (int i = 0; i<l->length; i++){
-        printf("\033[3%dm%c\x1b[0m ", m->f->col, m->f->type);
-        m = m->next;
-    }
-}
-
-void getForme(char type, char col, Forme * f){
-    //Forme * f = malloc(sizeof(Forme));
-    f->col = col;
-    f->type = type;
-    //return f;
-}
-
-void getRandForme(Forme * f){
-    char types[] = "TRCL";
-    int type = rand()%4;
-
-    getForme(types[type], rand()%4+1, f);
-    //return f;
-}
-
-Liste * getList(void){
-    Liste * l = malloc(sizeof(Liste));
-    l->length = 0;
-    l->first = NULL;
-    return l;
-}
-
-void appendListe(Liste * l, Forme * f2, char pos){
-    Forme * f = malloc(sizeof(Forme));
-    getForme(f2->type, f2->col, f);
-    Maillon * m = malloc(sizeof(Maillon));
-    m->f = f;
-    if (l->length == 0){
-        l->first = m;
-        m->next = m;
-        m->prev = m;
-        l->length++;
-        return;
-    }
-    m->next = l->first;
-    m->prev = l->first->prev;
-    l->first->prev->next = m;
-    l->first->prev = m;
-    if (pos == 0){
-        l->first = m;
-    }
-    l->length++;
-}
-
-void remListe(Liste * l, Forme * rem){
-    Maillon * m = l->first;
-    if (m->f == rem){
-        l->first->prev->next = l->first->next;
-        l->first->next->prev = l->first->prev;
-        l->first = l->first->next;
-        free(m);
-        l->length-=1;
-        return;
-    }
-    m = m->next;
-    for(int i = 0; i<l->length-1; i++){
-        if (m->f == rem){
-            m->prev->next = m->next;
-            m->next->prev = m->prev;
-            free(m);
-            l->length -= 1;
-            return;
-        }
-        m = m->next;
+        remListe(red, rem[i]);
+        remListe(blue, rem[i]);
+        remListe(green, rem[i]);
+        remListe(yell, rem[i]);
+        free(rem[i]);
     }
 }
 
-int checkListe(Liste * l, Forme ** ID){
-
-    int simC = 1;
-    int simT = 1;
-    char prevC = ' ';
-    char prevT = ' ';
-    Maillon * m = l->first;
-
-    for (int i = 0; i < l->length; i++){
-
-        if (m->f->col == prevC){
-            simC++;
-        } else if (simC>=3) {
-            for (int j = 0; j<simC; j++){
-                m = m->prev;
-                ID[j] = m->f;
-            }
-            return simC;
-        } else {
-            simC = 1;
-            prevC = m->f->col;
-        }
-
-        if (m->f->type == prevT){
-            simT++;
-            ID[simT-1] = m->f;
-        } else if (simT>=3) {
-            for (int j = 0; j<simT; j++){
-                m = m->prev;
-                ID[j] = m->f;
-            }
-            return simT;
-        } else {
-            simT = 1;
-            prevT = m->f->type;
-        }
-        m = m->next;
-    }
-    if (simC>= 3 || simT>=3){
-        for (int i = 0; i<max(simC, simT); i++){
-            m = m->prev;
-            ID[i] = m->f;
-        }
-        return max(simC,simT);
-    }
-    return 0;
+void mainLoopSDL(void){
+    
 }
 
-void freeListe(Liste* l){
-    Maillon * m = l->first->next;
-    for (int i = 0; i < l->length-1; i++){
-        m = m->next;
-        free(m->prev->f);
-        free(m->prev);
-    }
-    free(l->first->f);
-    free(l->first);
-}
-
-void mainloopASCII(){
+void mainloopASCII(void){
     int score = 0;
     int nscore = 0;
     char move;
+    char r_id;
+    char insert = 0;
+    char side = 0;
+
     Forme ** ID = malloc(5*sizeof(Forme *));
 
-    Liste * mainlist = getList();
+    Forme ** next = malloc(5*sizeof(Forme *));
 
-    Liste * circ = getList();
-    Liste * squa = getList();
-    Liste * los = getList();
-    Liste * tri = getList();
-
-    Liste * red = getList();
-    Liste * blue = getList();
-    Liste * yell = getList();
-    Liste * green = getList();
-
-    Forme * current = malloc(sizeof(Forme));
-    Forme * next = malloc(sizeof(Forme));
-
-    getRandForme(next);
+    for (int i = 0; i<5; i++){
+        next[i] = getRandForme();
+    }
 
     while (mainlist->length < 15){
-        *current = *next;
-        getRandForme(next);
+        if (insert){
+            for (int i = 0; i<4; i++){
+                next[i] = next[i+1];
+            }
+            next[4] = getRandForme();
+        }
+
+        insert = 0;
 
         printf("\033[2J");
         printf("\033[0;0H");
         printf("Score : %d\n", score);
         printf("\n\n\n\n");
         printList(mainlist);
+        printf("\n");
+        //printList(blue);
         printf("\n\n\n\n");
-        printf("=>\033[3%dm%c\x1b[0m<=     next : \033[3%dm%c\x1b[0m\n", current->col, current->type, next->col, next->type);
+        printf("=>\033[3%dm%c\x1b[0m<=     next : \x1b[0m", next[0]->col, next[0]->type);
+        for (int i = 1; i<5; i++){
+            printf("\033[3%dm%c ", next[i]->col, next[i] ->type);
+        }
+        printf("\x1b[0m\n");
 
-        move = '0';
-        while(move != 'd' && move != 'g'){
-            scanf("%c", &move);
+        move = '\0';
+        while(move != 'd' && move != 'g' && move != 'c' && move != 'f'){
+            scanf(" %c", &move);
             getchar();
         }
-        
-        if (move == 'g'){
-            appendListe(mainlist, current, 0);
-        } else if (move == 'd'){
-            appendListe(mainlist, current, 1);
+
+        switch (move){
+            case 'g':
+                insert = 1;
+                side = 0;
+                break;
+            case 'd':
+                insert = 1;
+                side = 1;
+                break;
+            case 'f':
+                printf("Which shape to rotate ?\ns - Square | c - Circle | t - Triangle | d - Diamond\n");
+                scanf(" %c", &r_id);
+                switch (r_id){
+                    case 's':
+                        rotateList(squa, 1);
+                        break;
+                    case 'c':
+                        rotateList(circ, 1);
+                        break;
+                    case 't':
+                        rotateList(tri, 1);
+                        break;
+                    case 'd':
+                        rotateList(los, 1);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case 'c':
+                printf("Which color to rotate ?\nr - Red | b - Blue | g - Green | y - Yellow\n");
+                scanf(" %c", &r_id);
+                switch (r_id){
+                    case 'r':
+                        rotateList(red, 0);
+                        break;
+                    case 'b':
+                        printf("BLUE");
+                        rotateList(blue, 0);
+                        printf("BLUE");
+                        break;
+                    case 'g':
+                        rotateList(green, 0);
+                        break;
+                    case 'y':
+                        rotateList(yell, 0);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
         }
-        nscore = checkListe(mainlist, ID);
-        score += nscore;
-        for (int i = 0; i<nscore; i++){ 
-            remListe(mainlist, ID[i]);
+
+        if (insert){
+            appendListe(mainlist, next[0], (int)side);
+            switch (next[0]->type){
+                case 'R':
+                    appendListe(circ, next[0], (int)side);
+                    break;
+                case 'C':
+                    appendListe(squa, next[0], (int)side);
+                    break;
+                case 'L':
+                    appendListe(los, next[0], (int)side);
+                    break;
+                case 'T':
+                    appendListe(tri, next[0], (int)side);
+                    break;
+                default:
+                    break;
+            }
+            switch (next[0]->col){
+                case 1:
+                    appendListe(red, next[0], (int)side);
+                    break;
+                case 2:
+                    appendListe(green, next[0], (int)side);
+                    break;
+                case 3:
+                    appendListe(yell, next[0], (int)side);
+                    break;
+                case 4:
+                    appendListe(blue, next[0], (int)side);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        nscore = 1;
+        while (nscore != 0){
+            nscore = checkListe(mainlist, ID);
+            score += nscore;
+            remAllListe(ID, nscore);
         }
     }
+
+    printf("Game over !");
+
+    for (int i = 0; i<5; i++){
+        free(next[i]);
+    }
+    free(ID);
+}
+
+int main(int argc, char *argv[]) {
+
+    mainlist = getList();
+    circ = getList();
+    squa = getList();
+    los = getList();
+    tri = getList();
+    red = getList();
+    blue = getList();
+    yell = getList();
+    green = getList();
+
+
+    srand(time(NULL));
+    setupConsole();
+    mainloopASCII();
+    restoreConsole();
 
     freeListe(mainlist);
 
@@ -223,16 +220,4 @@ void mainloopASCII(){
     free(blue);
     free(yell);
     free(green);
-
-    free(current);
-    free(next);
-
-    free(ID);
-}
-
-int main(void) {
-    srand(time(NULL));
-    setupConsole();
-    mainloopASCII();
-    restoreConsole();
 }
