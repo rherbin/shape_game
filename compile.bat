@@ -1,2 +1,2 @@
 REM gcc -Wall ansi_escape.c main.c -o main
-gcc ./modules/ansi_escape.c ./modules/utils.c main.c -I.\SDL2\include -L.\SDL2\lib -Wall -lmingw32 -lSDL2main -lSDL2 -o main
+gcc ./SDL2_gfx/SDL2_rotozoom.c ./SDL2_gfx/SDL2_gfxPrimitives.c ./modules/ansi_escape.c ./modules/utils.c main.c -I.\SDL2\include -L.\SDL2\lib -Wall -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf -o main

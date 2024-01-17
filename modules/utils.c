@@ -3,19 +3,20 @@
 #include <stdlib.h>
 #include <time.h>
 #include "ansi_escape.h"
+#include "../SDL2/include/SDL2/SDL.h"
+#include <math.h>
+#include "../SDL2_gfx/SDL2_gfxPrimitives.h"
+
+#define pi 3.1415926535897932384626433832795
 
 #define max(a,b) (a>=b?a:b)
 #define min(a,b) (a<=b?a:b)
 
-// Liste * mainlist;
-// Liste * circ;
-// Liste * squa;
-// Liste * los;
-// Liste * tri;
-// Liste * red;
-// Liste * blue;
-// Liste * yell;
-// Liste * green;
+//
+//
+// LIST MANAGEMENT FUNCTIONS
+//
+//
 
 int getVal(Forme * f){
     int val = 0;
@@ -40,33 +41,36 @@ int getVal(Forme * f){
 }
 
 void printList(Liste * l){
+    // Print each Forme of a given Liste with ansi escape
+    char types[] = "TRCL";
     if (l->length == 0){
         return;
     }
     Maillon * m = l->first;
     for (int i = 0; i<l->length; i++){
-        printf("\033[3%dm%c\x1b[0m ", m->f->col, m->f->type);
+        printf("\033[3%dm%c\x1b[0m ", m->f->col, types[m->f->type]);
         m = m->next;
     }
 }
 
 void getForme(char type, char col, Forme * f){
-    //Forme * f = malloc(sizeof(Forme));
+    // Useless
     f->col = col;
     f->type = type;
     //return f;
 }
 
 Forme * getRandForme(void){
-    char types[] = "TRCL";
+    // Get a Forme with a random type and color
     int type = rand()%4;
     Forme * f = malloc(sizeof(Forme));
 
-    getForme(types[type], rand()%4+1, f);
+    getForme(type, rand()%4+1, f);
     return f;
 }
 
 Liste * getList(void){
+    // Get empty Liste
     Liste * l = malloc(sizeof(Liste));
     l->length = 0;
     l->first = NULL;
@@ -74,8 +78,7 @@ Liste * getList(void){
 }
 
 void appendListe(Liste * l, Forme * f, char pos){
-    //Forme * f = malloc(sizeof(Forme));
-    //getForme(f2->type, f2->col, f);
+    // Create a new Maillon pointing to a given Forme and append it to the beginning or the end of a given Liste
     Maillon * m = malloc(sizeof(Maillon));
     m->f = f;
     if (l->length == 0){
@@ -96,6 +99,8 @@ void appendListe(Liste * l, Forme * f, char pos){
 }
 
 void remListe(Liste * l, Forme * rem){
+    // Remove any Maillon pointing to a given Forme from a given Liste
+
     if (l->length == 0){
         return;
     }
@@ -128,6 +133,8 @@ void remListe(Liste * l, Forme * rem){
 }
 
 void rotateList(Liste * l, char type){
+    // Rotate a given Liste around the color or the type
+
     if (l->length <= 1){
         return;
     }
@@ -157,6 +164,8 @@ void rotateList(Liste * l, char type){
 }
 
 int checkListe(Liste * l, Forme ** ID){
+    // Check a given Liste for 3 or more following shapes with the same shape or color and puts them into the given ID array.
+    // Returns number of consecutive shapes found
 
     int simC = 1;
     int simT = 1;
@@ -205,6 +214,7 @@ int checkListe(Liste * l, Forme ** ID){
 }
 
 void freeListe(Liste* l){
+    // Free each Maillon of a given Liste
     Maillon * m = l->first->next;
     for (int i = 0; i < l->length-1; i++){
         m = m->next;
@@ -213,4 +223,124 @@ void freeListe(Liste* l){
     }
     free(l->first->f);
     free(l->first);
+}
+
+//
+//
+// SDL FUNCTIONS
+//
+//
+
+char * intToString(int n){
+    if (n == 0){
+        return "0";
+    }
+    int size = ceil(log10(n));
+    char * res = malloc(size+1);
+    for (int i = 0; i<size; i++){
+        res[size-i-1] = (char)(n%10)+'0';
+        n/= 10;
+    }
+    res[size] = '\0';
+    return res;
+}
+
+char * scoreString(int n){
+    if (n == 0){
+        return "Score : 0";
+    }
+    int size = 8+ceil(log10(n));
+    char * res = malloc(size+1);
+    strcpy(res, "Score : ");
+    char * strAAAAA = intToString(n);
+    strcat(res, strAAAAA);
+    res[size] = '\0';
+    return res;
+}
+
+void colorFromNumber(int n, int * r, int * g, int * b){
+    // 0 <= n <= 6*256-1, puts associated color in r g and b, each color has max saturation of the corresponding hue.
+    switch (n/256){
+        case 0:
+            *r=255;
+            *g=n%256;
+            *b = 0;
+            break;
+        case 1:
+            *g = 255;
+            *r = 255-(n%256);
+            *b = 0;
+            break;
+        case 2:
+            *g = 255;
+            *b = n%256;
+            *r = 0;
+            break;
+        case 3:
+            *b = 255;
+            *g = 255-(n%256);
+            *r = 0;
+            break;
+        case 4:
+            *b = 255;
+            *r = n%256;
+            *g = 0;
+            break;
+        case 5:
+            *r = 255;
+            *b = 255-(n%256);
+            *g = 0;
+            break;
+    }
+}
+
+void rota(double * x, double * y, double angle){
+    // Rotate x and y coordinate of an angle around the origin
+    double nx = (*x)*cos(angle) - (*y)*sin(angle);
+    double ny = (*x)*sin(angle) + (*y)*cos(angle);
+    *x = nx;
+    *y = ny;
+}
+
+void aathickLineRGBA(SDL_Renderer * rend, int x1, int y1, int x2, int y2, int thickness, int r, int g, int b, int a){
+    // Draw a thick line with anti aliasing
+    double vectx = x1 - x2;
+    double vecty = y1 - y2;
+
+    rota(&vectx, &vecty, pi/2);
+    double norm = sqrt(vectx*vectx + vecty*vecty);
+    vectx /= norm;
+    vecty /= norm;
+
+    Sint16 * x = malloc(sizeof(Sint16)*4);
+    Sint16 * y = malloc(sizeof(Sint16)*4);
+
+    x[0] = (Sint16) x1 - vectx*thickness/2;
+    x[1] = (Sint16) x2 - vectx*thickness/2;
+    x[2] = (Sint16) x2 + vectx*thickness/2;
+    x[3] = (Sint16) x1 + vectx*thickness/2;
+
+    y[0] = (Sint16) y1 - vecty*thickness/2;
+    y[1] = (Sint16) y2 - vecty*thickness/2;
+    y[2] = (Sint16) y2 + vecty*thickness/2;
+    y[3] = (Sint16) y1 + vecty*thickness/2;
+
+    thickLineRGBA(rend, x1, y1, x2, y2, thickness, r, g, b, a);
+    aapolygonRGBA(rend, x, y, 4, r, g, b, a);
+}
+
+void drawpoly(SDL_Renderer * rend, int sides, int x, int y, int size, int r, int g, int b){
+    // Draw a regular polygon with a given number of sides using rotations
+    double angle = 2*pi/sides;
+    double absx1 = 0.0, absy1 = -1.0;
+    double absx2 = 0.0, absy2 = -1.0;
+    rota(&absx2, &absy2, angle);
+    for (int i = 0; i<sides; i++){
+        aathickLineRGBA(rend, x+absx1*(size/2), y+absy1*(size/2), x+absx2*(size/2), y+absy2*(size/2), size/5, r, g, b, 255);
+        //thickLineRGBA(rend, x+absx1*(size/2), y+absy1*(size/2), x+absx2*(size/2), y+absy2*(size/2), size/5, r, g, b, 255);
+        aacircleRGBA(rend, x+absx1*(size/2), y+absy1*(size/2), size/10, r, g, b, 255);
+        filledCircleRGBA(rend, x+absx1*(size/2), y+absy1*(size/2), size/10, r, g, b, 255);
+        rota(&absx1, &absy1, angle);
+        rota(&absx2, &absy2, angle);
+    }
 }
