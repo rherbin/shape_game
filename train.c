@@ -231,7 +231,7 @@ int * take_step(int state[22], int move){
         for (int i = 0; i<next_nbr-1; i++){
             next[i] = next[i+1];
         }
-        next[next_nbr-1] = getRandForme();
+        next[next_nbr-1] = getRandForme(4, 4);
 
         nscore = 1;
         while (nscore != 0){
