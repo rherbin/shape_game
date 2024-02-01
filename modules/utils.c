@@ -50,22 +50,107 @@ void printList(Liste * l){
     }
     Maillon * m = l->first;
     for (int i = 0; i<l->length; i++){
-        printf("\033[3%dm%c%d\x1b[0m ", m->f->col+1, types[(int)m->f->type], m->f->mainID);
+        printf("\033[3%dm%c\x1b[0m ", m->f->col+1, types[(int)m->f->type]);
+        //printf("m->f:%p m:%p", m->f, m);
         m = m->next;
     }
 }
 
-void printMList(MListe * l){
-    // Print each Forme of a given Liste with ansi escape
+void printState(Liste * mainlist, int score, Forme ** next){
     char types[] = "TRCL";
-    if (l->length == 0){
-        return;
+    printf("\033[2J");
+    printf("\033[0;0H");
+    printf("\xda");
+    for (int i = 0; i < 69; i++){
+        printf("\xc4");
     }
-    MaillonM * mm = l->first;
-    for (int i = 0; i<l->length; i++){
-        printf("\033[3%dm%c%d\x1b[0m ", mm->m->f->col+1, types[(int)mm->m->f->type], mm->m->f->mainID);
-        mm = mm->next;
+    printf("\xbf\n");
+    printf("\xb3");
+    for (int i = 0; i < 31; i++){
+        printf(" ");
     }
+    printf("Score : %d", score);
+    for (int i = 0; i< 30-max((floor(log10(score))+1), 1); i++){
+        printf(" ");
+    }
+    printf("\xb3\n");
+    printf("\xc3");
+    for (int i = 0; i < 69; i++){
+        printf("\xc4");
+    }
+    printf("\xb4\n");
+
+    printf("\xb3");
+    for (int i = 0; i<69; i++){
+        printf(" ");
+    }
+    printf("\xb3\n");
+    printf("\xb3");
+    for (int i = 0; i<69; i++){
+        printf(" ");
+    }
+    printf("\xb3\n");
+    printf("\xb3");
+    for (int i = 0; i < 35-mainlist->length; i++){
+        printf(" ");
+    }
+    printList(mainlist);
+    for (int i = 0; i < 34-mainlist->length; i++){
+        printf(" ");
+    }
+    printf("\xb3\n");
+    printf("\xb3");
+    for (int i = 0; i<69; i++){
+        printf(" ");
+    }
+    printf("\xb3\n");
+    printf("\xb3");
+    for (int i = 0; i<69; i++){
+        printf(" ");
+    }
+    printf("\xb3\n");
+
+    printf("\xc3");
+    for (int i = 0; i < 69; i++){
+        printf("\xc4");
+    }
+    printf("\xb4\n");
+
+    printf("\xb3");
+    for (int i = 0; i < 34; i++){
+        printf(" ");
+    }
+    printf("\x1f");
+    for (int i = 0; i < 34; i++){
+        printf(" ");
+    }
+    printf("\xb3\n");
+    printf("\xb3");
+    for (int i = 0; i < 32; i++){
+        printf(" ");
+    }
+    printf("\x10 \033[3%dm%c\x1b[0m \x11  Next : \x1b[0m", next[0]->col+1, types[(int)next[0]->type]);
+    for (int i = 1; i<5; i++){
+        printf("\033[3%dm%c\x1b[0m ", next[i]->col+1, types[(int)next[i]->type]);
+    }for (int i = 0; i < 15; i++){
+        printf(" ");
+    }
+    printf("\xb3\n");
+    printf("\xb3");
+    for (int i = 0; i < 34; i++){
+        printf(" ");
+    }
+    printf("\x1e");
+    for (int i = 0; i < 34; i++){
+        printf(" ");
+    }
+    printf("\xb3\n");
+    printf("\xc3");
+    for (int i = 0; i < 69; i++){
+        printf("\xc4");
+    }
+    printf("\xb4\n");
+    printf("\x1b[0m\n");
 }
 
 void getForme(char type, char col, Forme * f){
@@ -91,53 +176,44 @@ Liste * getList(void){
     return l;
 }
 
-MListe * getMList(void){
-    // Get empty Liste
-    MListe * l = malloc(sizeof(MListe));
-    l->length = 0;
-    l->first = NULL;
-    return l;
-}
-
-Maillon * appendListe(Liste * l, Forme * f, char pos){
+void appendListeID(Liste * l, Forme * f, int mainID){
     Maillon * m = malloc(sizeof(Maillon));
     m->f = f;
+    m->mainID = mainID;
     if (l->length == 0){
         l->first = m;
         m->next = m;
         m->prev = m;
         l->length++;
-        return m;
+        return;
     }
-    m->next = l->first;
-    m->prev = l->first->prev;
-    l->first->prev->next = m;
-    l->first->prev = m;
-    if (pos == 0){
+    if (l->first->mainID > mainID){
+        m->next = l->first;
+        m->prev = l->first->prev;
+        l->first->prev->next = m;
+        l->first->prev = m;
         l->first = m;
-    }
-    l->length++;
-    return m;
-}
-
-void appendMListe(MListe * l, Maillon * m, char pos){
-    MaillonM * mm = malloc(sizeof(MaillonM));
-    mm->m = m;
-    if (l->length == 0){
-        l->first = mm;
-        mm->next = mm;
-        mm->prev = mm;
         l->length++;
         return;
     }
-    mm->next = l->first;
-    mm->prev = l->first->prev;
-    l->first->prev->next = mm;
-    l->first->prev = mm;
-    if (pos == 0){
-        l->first = mm;
+    Maillon * iter = l->first;
+    for (int i = 0; i<l->length-1; i++){
+        if (iter->next->mainID > mainID){
+            m->next = iter->next;
+            m->prev = iter;
+            iter->next->prev = m;
+            iter->next = m;
+            l->length++;
+            return;
+        }
+        iter = iter->next;
     }
+    m->next = iter->next;
+    m->prev = iter;
+    iter->next->prev = m;
+    iter->next = m;
     l->length++;
+    return;
 }
 
 Maillon * appendMainListe(Liste * l, Forme * f, char pos){
@@ -148,7 +224,7 @@ Maillon * appendMainListe(Liste * l, Forme * f, char pos){
         l->first = m;
         m->next = m;
         m->prev = m;
-        m->f->mainID = 0;
+        m->mainID = 0;
         l->length++;
         return m;
     }
@@ -158,85 +234,12 @@ Maillon * appendMainListe(Liste * l, Forme * f, char pos){
     l->first->prev = m;
     if (pos == 0){
         l->first = m;
-        m->f->mainID = 0;
-        for (int i = 0; i < l->length; i++){
-            m = m->next;
-            m->f->mainID++;
-        }
+        m->mainID = m->next->mainID-1;
     } else {
-        m->f->mainID = m->prev->f->mainID+1;
+        m->mainID = m->prev->mainID+1;
     }
     l->length++;
     return m;
-}
-
-void appendListeWithID(Liste * l, Forme * f, char pos){
-    // insert Maillon containing f in l, at the right position according to the mainID. 
-    Maillon * iter = l->first;
-    Maillon * m = malloc(sizeof(Maillon));
-    m->f = f;
-    // chek if insertion is first
-    if (l->length == 0){
-        l->first = m;
-        m->next = m;
-        m->prev = m;
-        l->length++;
-        return;
-    }
-    printf("ID1");
-    if (f->mainID < l->first->f->mainID){
-        m->next = l->first;
-        l->first->prev->next = m;
-        l->first->next->prev = m;
-        m->prev = l->first->prev;
-        l->first = m;
-        l->length++;
-        printf("ENDID1");
-        return;
-    }
-    printf("ID2");
-    // check for each element of liste
-    for (int i = 0; i<l->length-1; i++){
-        if (iter->next->f->mainID > f->mainID){
-            iter->next->prev = m;
-            m->next = iter->next;
-            iter->next = m;
-            m->prev = iter;
-            l->length++;
-            printf("ENDID2");
-            return;
-        }
-    }
-    // if no element is after, then it must be last
-    printf("ID3");
-    m->next = l->first;
-    m->prev = l->first->prev;
-    l->first->prev->next = m;
-    l->first->prev = m;
-    l->length++;
-    printf("ID4");
-}
-
-void remMainListe(Liste * l, Forme * rem){
-    if (l->length == 0){
-        return;
-    }
-
-    Maillon * m = l->first;
-
-    if (m->f == rem){
-        l->first = l->first->next;
-        l->length -= 1;
-        return;
-    }
-
-    while (m != NULL && m->next != NULL){
-        if (m->next->f == rem){
-            m->next = m->next->next;
-            l->length -= 1;
-        }
-        m = m->next;
-    }
 }
 
 void remListe(Liste * l, Forme * rem){
@@ -251,13 +254,13 @@ void remListe(Liste * l, Forme * rem){
         if (l->length == 1){
             l->first = NULL;
             l->length -= 1;
-            //free(m);
+            free(m);
             return;
         }
         l->first->prev->next = l->first->next;
         l->first->next->prev = l->first->prev;
         l->first = l->first->next;
-        //free(m);
+        free(m);
         l->length-=1;
         return;
     }
@@ -267,7 +270,7 @@ void remListe(Liste * l, Forme * rem){
         if (m->f == rem){
             m->prev->next = m->next;
             m->next->prev = m->prev;
-            //free(m);
+            free(m);
             l->length -= 1;
             return;
         }
@@ -279,160 +282,93 @@ void remListe(Liste * l, Forme * rem){
     }
 }
 
-void remMListe(MListe * l, Forme * rem){
-    // Remove any Maillon pointing to a given Forme from a given Liste
-
+void clearList(Liste * l){
     if (l->length == 0){
         return;
     }
-    
-    MaillonM * mm = l->first;
-    if (mm->m->f == rem){
-        if (l->length == 1){
-            l->first = NULL;
-            l->length -= 1;
-            //free(m);
-            return;
-        }
-        l->first->prev->next = l->first->next;
-        l->first->next->prev = l->first->prev;
-        l->first = l->first->next;
-        //free(m);
-        l->length-=1;
-        return;
-    }
-
-    mm = mm->next;
-    for(int i = 0; i<l->length-1; i++){
-        if (mm->m->f == rem){
-            mm->prev->next = mm->next;
-            mm->next->prev = mm->prev;
-            //free(m);
-            l->length -= 1;
-            return;
-        }
-        mm = mm->next;
-    }
-
-    if (l->length == 0){
-        l->first = NULL;
-    }
-}
-
-void rotateMList(MListe * l, char type){
-    // Rotate a given Liste around the color or the type
-
-    if (l->length <= 1){
-        return;
-    }
-
-    //printf("jahah");
-
-    MaillonM * mm = l->first;
-    Forme * tmp = mm->m->f;
-
-    printf("lol");
-
-    //printf("ici");
-
-    for (int i = 0; i<l->length-1; i++){
-        mm->m->f = mm->next->m->f;
-        mm = mm->next;
-    }
-
-    //printf("la");
-
-    mm->m->f = tmp;
-
-    //l->first = l->first->next;
-}
-
-void rotateList(Liste * l, char type){
-    // Rotate a given Liste around the color or the type
-
-    if (l->length <= 1){
-        return;
-    }
-
-    //printf("jahah");
-
     Maillon * m = l->first;
-    char tmp;
-    printf("lol");
-    if (type == 1){
-        tmp = m->f->col;
-    } else {
-        tmp = m->f->type;
-    }
-
-    //printf("ici");
-
+    Maillon * next;
     for (int i = 0; i<l->length-1; i++){
-        if (type == 1){
-            m->f->col = m->next->f->col;
-        } else {
-            m->f->type = m->next->f->type;
+        next = m->next;
+        free(m);
+        m = next;
+    }
+    free(m);
+    l->length = 0;
+    l->first = NULL;
+}
+
+void rotateMlist(Liste * mainlist, Liste * rot, Liste ** collist, Liste ** shaplist){
+    // doesn't work for some reason
+    if (rot->length <= 1){
+        return;
+    }
+    Maillon * iter = rot->first;
+    Maillon * m = mainlist->first;
+    for (int i = 0; i<rot->length;i++){
+        printf("/%d\\", i);
+        while (m->f != iter->f){
+            // printf(" l ");
+            m = m->next;
+            printf("loop : %p\n", m);
         }
+
+        printf("|%d|", i);
+        printf("m->f:%p iter->f:%p m:%p - ", m->f, iter->f, m);
+        m->f = iter->next->f;
+        printf("m->f:%p iter->next->f%p m:%p\n", m->f, iter->next->f, m);
+
+        if (rot->type == 0){
+            // printf("av ");
+            remListe(shaplist[(int)m->f->type], m->f);
+            // printf("ap ");
+            appendListeID(shaplist[(int)m->f->type], m->f, m->mainID);
+            // printf("ad ");
+        } else {
+            // printf("av ");
+            remListe(collist[(int)m->f->col], m->f);
+            // printf("ap ");
+            appendListeID(collist[(int)m->f->col], m->f, m->mainID);
+            // printf("ad ");
+        }
+        iter = iter->next;
         m = m->next;
     }
-
-    //printf("la");
-
-    if (type == 1){
-        m->f->col = tmp;
-    } else {
-        m->f->type = tmp;
-    }
+    rot->first = rot->first->next;
 }
 
-int checkListe2(Liste * l, Forme ** ID){
-    // Check a given Liste for 3 or more following shapes with the same shape or color and puts them into the given ID array.
-    // Returns number of consecutive shapes found
-
-    int simC = 1;
-    int simT = 1;
-    char prevC = 0;
-    char prevT = 0;
-    Maillon * m = l->first;
-
-    for (int i = 0; i < l->length; i++){
-
-        if (m->f->col == prevC){
-            simC++;
-        } else if (simC>=3) {
-            for (int j = 0; j<simC; j++){
-                m = m->prev;
-                ID[j] = m->f;
-            }
-            return simC;
-        } else {
-            simC = 1;
-            prevC = m->f->col;
+void rotateMlist4(Liste * mainlist, Liste * rot, Liste ** collist, Liste ** shaplist, int n_col, int n_shap){
+    if (rot->length <= 1){
+        return;
+    }
+    Maillon * iter = rot->first;
+    Maillon * m = mainlist->first;
+    for (int i = 0; i<rot->length;i++){
+        while (m->f != iter->f){
+            m = m->next;
         }
+        
+        printf("m->f:%p iter->f:%p m:%p - ", m->f, iter->f, m);
+        m->f = iter->next->f;
+        printf("m->f:%p iter->next->f%p m:%p\n", m->f, iter->next->f, m);
 
-        if (m->f->type == prevT){
-            simT++;
-            ID[simT-1] = m->f;
-        } else if (simT>=3) {
-            for (int j = 0; j<simT; j++){
-                m = m->prev;
-                ID[j] = m->f;
-            }
-            return simT;
-        } else {
-            simT = 1;
-            prevT = m->f->type;
-        }
+        iter = iter->next;
         m = m->next;
     }
-    if (simC>= 3 || simT>=3){
-        for (int i = 0; i<max(simC, simT); i++){
-            m = m->prev;
-            ID[i] = m->f;
-        }
-        return max(simC,simT);
+    printf("éo");
+    for (int i = 0; i < n_col; i++){
+        clearList(collist[i]);
     }
-    return 0;
+    for (int i = 0; i < n_shap; i++){
+        clearList(shaplist[i]);
+    }
+    printf("éa");
+    m = mainlist->first;
+    for (int i = 0; i < mainlist->length; i++){
+        appendMainListe(collist[(int)m->f->col], m->f, 1);
+        appendMainListe(shaplist[(int)m->f->type], m->f, 1);
+        m = m->next;
+    }
 }
 
 int checkListe(Liste * l, Forme ** ID){
@@ -505,7 +441,7 @@ char * intToString(int n){
     if (n == 0){
         return "0";
     }
-    int size = ceil(log10(n));
+    int size = floor(log10(n))+1;
     char * res = malloc(size+1);
     for (int i = 0; i<size; i++){
         res[size-i-1] = (char)(n%10)+'0';
@@ -601,7 +537,7 @@ void aathickLineRGBA(SDL_Renderer * rend, int x1, int y1, int x2, int y2, int th
 
     // Draw an anti aliased empty polygon then fill it with a normal tick line
     thickLineRGBA(rend, x1, y1, x2, y2, thickness, r, g, b, a);
-    aapolygonRGBA(rend, x, y, 4, r, g, b, a);
+    //aapolygonRGBA(rend, x, y, 4, r, g, b, a);
 }
 
 void drawpoly(SDL_Renderer * rend, int sides, int x, int y, int size, int r, int g, int b){
@@ -647,4 +583,34 @@ SDL_Texture * getTexFromImg(SDL_Renderer * rend, char * imgname){
     SDL_Texture * res = SDL_CreateTextureFromSurface(rend, sur);
     SDL_FreeSurface(sur);
     return res;
+}
+
+void SDL_RenderDrawText(SDL_Renderer * rend, TTF_Font * font, int x, int y, char * text){
+    SDL_Color white = {255, 255, 255};
+    SDL_Rect rect;
+    SDL_Surface * txt = TTF_RenderText_Solid(font, text, white);
+    SDL_Texture * tex = SDL_CreateTextureFromSurface(rend, txt);
+    rect.w = txt->w;
+    rect.h = txt->h;
+    SDL_FreeSurface(txt);
+    rect.x = x;
+    rect.y = y;
+    SDL_RenderCopy(rend, tex, NULL, &rect);
+}
+
+int save(int score, int n_shape, int int_col, int max_shape, Liste * mainlist, Forme ** next){
+    // score n_col n_shape max_shape next * 5 mainlist
+    return 0;
+}
+
+int * load(Liste * mainlist, Forme ** next){
+    return NULL;
+}
+
+int highscore(int score){
+    return 0;
+}
+
+int loadscore(int score, char * initiale){
+    return 0;
 }

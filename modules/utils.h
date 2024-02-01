@@ -7,7 +7,6 @@
 typedef struct forme{
     char type; //R = ROND, C = CARRE, L = LOSANGE, T = TRIANGLE
     char col; //1 = ROUGE, 2 = VERT, 3 = JAUNE, 4 = BLEU
-    int mainID;
 } Forme;
 
 typedef struct maillon{
@@ -20,6 +19,7 @@ typedef struct maillon{
 typedef struct list{
     int length;
     Maillon * first;
+    char type; // 0 = col, 1 = shape
 } Liste;
 
 typedef struct mlistmaillon {
@@ -31,24 +31,21 @@ typedef struct mlistmaillon {
 typedef struct mlist{
     int length;
     MaillonM * first;
+    char type; // 0 = col, 1 = shape
 } MListe;
 
 int getVal(Forme * f);
 void printList(Liste * l);
-void printMList(MListe * l);
+void printState(Liste * mainlist, int score, Forme ** next);
 void getForme(char type, char col, Forme * f);
 Forme * getRandForme(int n_formes, int n_colors);
 Liste * getList(void);
-MListe * getMList(void);
-Maillon * appendListe(Liste * l, Forme * f, char pos);
-void appendMListe(MListe * l, Maillon * m, char pos);
-void appendListeWithID(Liste * l, Forme * f, char pos);
+void appendListeID(Liste * l, Forme * f, int mainID);
 Maillon * appendMainListe(Liste * l, Forme * f, char pos);
 void remListe(Liste * l, Forme * rem);
-void remMListe(MListe * l, Forme * rem);
 void remMainListe(Liste * l, Forme * rem);
-void rotateMList(MListe * l, char type);
-void rotateList(Liste * l, char type);
+//void rotateMList(Liste * mainliste, MListe * l);
+void rotateMlist4(Liste * mainlist, Liste * rot, Liste ** collist, Liste ** shaplist, int n_col, int n_shap);
 int checkListe(Liste * l, Forme ** ID);
 void freeListe(Liste* l);
 
@@ -61,3 +58,4 @@ void rota(double * x, double * y, double angle);
 void aathickLineRGBA(SDL_Renderer * rend, int x1, int y1, int x2, int y2, int thickness, int r, int g, int b, int a);
 int ButtonClick(SDL_Event * event, SDL_Rect * rect);
 SDL_Texture * getTexFromImg(SDL_Renderer * rend, char * imgname);
+void SDL_RenderDrawText(SDL_Renderer * rend, TTF_Font * font, int x, int y, char * text);
