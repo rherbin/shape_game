@@ -1,11 +1,16 @@
-# Makefile for compiling the SDL program
-
 CC = gcc
 CFLAGS = -Wall
 INCLUDES = -I./SDL2/include
-LIBS = -L./SDL2/lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_image
 SRC_DIR = ./SDL2_gfx
 MODULES_DIR = ./modules
+
+ifeq ($(OS),Windows_NT)
+    LIBS = -L./SDL2/lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_image
+    TARGET = main.exe
+else
+    LIBS = -lSDL2 -lSDL2_ttf -lSDL2_image
+    TARGET = main
+endif
 
 SRCS = $(SRC_DIR)/SDL2_rotozoom.c \
        $(SRC_DIR)/SDL2_gfxPrimitives.c \
@@ -14,7 +19,6 @@ SRCS = $(SRC_DIR)/SDL2_rotozoom.c \
        main.c
 
 OBJS = $(SRCS:.c=.o)
-TARGET = main
 
 all: $(TARGET)
 
