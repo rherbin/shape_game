@@ -13,24 +13,15 @@
 #define WIDTH 1280
 #define HEIGHT 720
 
-Liste * mainlist;
-
-Liste ** colList;
-Liste ** shapList;
-
 SDL_Color white = {255, 255, 255};
 
-void remAllListe(Forme ** rem, int len, int n_col, int n_shap){
+void remAllListe(Forme ** rem, Liste * mainlist, Liste ** colList, Liste ** shapList, int len, int n_col, int n_shap){
     for (int i = 0; i<len; i++){
         remListe(mainlist, rem[i]);
 
-        for (int j = 0; j<n_col; j++){
-            remListe(colList[j], rem[i]);
-        }
+        remListe(colList[(int)rem[i]->col], rem[i]);
 
-        for (int j = 0; j<n_shap; j++){
-            remListe(shapList[j], rem[i]);
-        }
+        remListe(shapList[(int)rem[i]->type], rem[i]);
 
         free(rem[i]);
     }
@@ -38,195 +29,203 @@ void remAllListe(Forme ** rem, int len, int n_col, int n_shap){
 
 int mainLoopSDL(SDL_Renderer * rend, int n_col, int n_shap, int max_shapes){
 
-    colList = malloc(sizeof(Liste *) * n_col);
-    shapList = malloc(sizeof(Liste *) * n_shap);
+    // Liste ** colList = malloc(sizeof(Liste *) * n_col);
+    // Liste ** shapList = malloc(sizeof(Liste *) * n_shap);
 
-    for (int i = 0; i< n_col; i++){
-        colList[i] = getList();
-        colList[i]->type = 0;
-    }
+    // Liste * mainlist = getList();
 
-    for (int i = 0; i< n_shap; i++){
-        shapList[i] = getList();
-        colList[i]->type = 1;
-    }
+    // for (int i = 0; i< n_col; i++){
+    //     colList[i] = getList();
+    //     colList[i]->type = 0;
+    // }
 
-    char running = 1;
-    SDL_Event event;
+    // for (int i = 0; i< n_shap; i++){
+    //     shapList[i] = getList();
+    //     shapList[i]->type = 1;
+    // }
 
-    SDL_Surface * txt_score;
-    SDL_Texture * tex;
-    SDL_Rect Rect_Score;
-    Rect_Score.x = 17;
-    Rect_Score.y = 10;
-    TTF_Font * font = TTF_OpenFont("./Assets/Fonts/VeniteAdoremus-rgRBA.ttf", 28);
-    TTF_Font * fontSmall = TTF_OpenFont("./Assets/Fonts/VeniteAdoremus-rgRBA.ttf", 14);
+    // char running = 1;
+    // SDL_Event event;
 
-    int score = 0;
-    int nscore = 0;
-    char * score_str;
-    char insert = 0;
-    char side;
-    char update = 1;
-    int d_col = 256*6/n_col;
-    int r;
-    int g;
-    int b;
-    int x;
-    int y;
+    // SDL_Surface * txt_score;
+    // SDL_Texture * tex;
+    // SDL_Rect Rect_Score;
+    // Rect_Score.x = 17;
+    // Rect_Score.y = 10;
+    // TTF_Font * font = TTF_OpenFont("./Assets/Fonts/VeniteAdoremus-rgRBA.ttf", 28);
+    // TTF_Font * fontSmall = TTF_OpenFont("./Assets/Fonts/VeniteAdoremus-rgRBA.ttf", 14);
 
-    // Text
-    SDL_Rect rect_Next;
-    SDL_Surface * txt_next = TTF_RenderText_Blended(fontSmall, "Next :", white);
-    SDL_Texture * tex_next = SDL_CreateTextureFromSurface(rend, txt_next);
-    rect_Next.w = txt_next->w;
-    rect_Next.h = txt_next->h;
-    SDL_FreeSurface(txt_next);
-    rect_Next.x = 700;
-    rect_Next.y = 565;
+    // int score = 0;
+    // int nscore = 0;
+    // char * score_str;
+    // char insert = 0;
+    // char side;
+    // char update = 1;
+    // int d_col = 256*6/n_col;
+    // int r;
+    // int g;
+    // int b;
+    // int x;
+    // int y;
 
-    //Utilities
-    Forme ** ID = malloc(5*sizeof(Forme *)); //will store the IDs (pointer to Forme) of the the shapes to remove from the Lists
-    Forme ** next = malloc(5*sizeof(Forme *)); //will store the next 5 shapes to play
+    // // Text
+    // SDL_Rect rect_Next;
+    // SDL_Surface * txt_next = TTF_RenderText_Blended(fontSmall, "Next :", white);
+    // SDL_Texture * tex_next = SDL_CreateTextureFromSurface(rend, txt_next);
+    // rect_Next.w = txt_next->w;
+    // rect_Next.h = txt_next->h;
+    // SDL_FreeSurface(txt_next);
+    // rect_Next.x = 700;
+    // rect_Next.y = 565;
 
-    for (int i = 0; i<5; i++){
-        next[i] = getRandForme(n_shap, n_col);
-    }
+    // //Utilities
+    // Forme * ID[5] = {NULL, NULL, NULL, NULL, NULL}; //will store the IDs (pointer to Forme) of the the shapes to remove from the Lists
+    // Forme * next[5]; //will store the next 5 shapes to play
 
-    while (running){
+    // for (int i = 0; i<5; i++){
+    //     next[i] = getRandForme(n_shap, n_col);
+    // }
+
+    // while (running){
         
-        while (SDL_PollEvent(&event))
-        {
-            switch (event.type)
-            {
-                case SDL_QUIT:
-                    running = 0;
-                    break;
-                case SDL_KEYDOWN:
-                    switch (event.key.keysym.scancode) {
-                        case SDL_SCANCODE_LEFT:
-                            insert = 1;
-                            side = 0;
-                            update = 1;
-                            break;
-                        case SDL_SCANCODE_RIGHT:
-                            insert = 1;
-                            side = 1;
-                            update = 1;
-                            break;
-                        case SDL_SCANCODE_C:
-                            rotateMlist4(mainlist, colList[0], colList, shapList, n_col, n_shap);
-                            update = 1;
-                            break;
-                        case SDL_SCANCODE_F:
-                            rotateMlist4(mainlist, shapList[0], colList, shapList, n_col, n_shap);
-                            update = 1;
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-        if (insert){
-            appendMainListe(mainlist, next[0], (int)side);
-            appendMainListe(colList[(int)next[0]->col], next[0], (int)side);
-            appendMainListe(shapList[(int)next[0]->type], next[0], (int)side);
-            for (int i = 0; i<4; i++){
-                next[i] = next[i+1];
-            }
-            next[4] = getRandForme(n_shap, n_col);
-        }
+    //     while (SDL_PollEvent(&event))
+    //     {
+    //         switch (event.type)
+    //         {
+    //             case SDL_QUIT:
+    //                 running = 0;
+    //                 break;
+    //             case SDL_KEYDOWN:
+    //                 switch (event.key.keysym.scancode) {
+    //                     case SDL_SCANCODE_LEFT:
+    //                         insert = 1;
+    //                         side = 0;
+    //                         update = 1;
+    //                         break;
+    //                     case SDL_SCANCODE_RIGHT:
+    //                         insert = 1;
+    //                         side = 1;
+    //                         update = 1;
+    //                         break;
+    //                     case SDL_SCANCODE_C:
+    //                         rotateMlist4(mainlist, colList[0], colList, shapList, n_col, n_shap);
+    //                         update = 1;
+    //                         break;
+    //                     case SDL_SCANCODE_F:
+    //                         rotateMlist4(mainlist, shapList[0], colList, shapList, n_col, n_shap);
+    //                         update = 1;
+    //                         break;
+    //                     default:
+    //                         break;
+    //                 }
+    //                 break;
+    //             default:
+    //                 break;
+    //         }
+    //     }
+    //     if (insert){
+    //         appendMainListe(mainlist, next[0], (int)side);
+    //         appendMainListe(colList[(int)next[0]->col], next[0], (int)side);
+    //         appendMainListe(shapList[(int)next[0]->type], next[0], (int)side);
+    //         for (int i = 0; i<4; i++){
+    //             next[i] = next[i+1];
+    //         }
+    //         next[4] = getRandForme(n_shap, n_col);
+    //     }
 
-        nscore = 1;
-        while (nscore != 0){
-            nscore = checkListe(mainlist, ID);
-            score += nscore;
-            remAllListe(ID, nscore, n_col, n_shap);
-        }
+    //     nscore = 1;
+    //     while (nscore != 0){
+    //         nscore = checkListe(mainlist, ID);
+    //         score += nscore;
+    //         remAllListe(ID, mainlist, colList, shapList, nscore, n_col, n_shap);
+    //     }
 
-        insert = 0;
+    //     insert = 0;
 
-        if (update){
-            // Clear screen
-            SDL_SetRenderDrawColor(rend, 0, 0, 32, 6);
-            SDL_RenderClear(rend);
-            SDL_SetRenderDrawColor(rend, 255, 255, 255, 255);
+    //     if (update){
+    //         // Clear screen
+    //         SDL_SetRenderDrawColor(rend, 0, 0, 32, 6);
+    //         SDL_RenderClear(rend);
+    //         SDL_SetRenderDrawColor(rend, 255, 255, 255, 255);
 
-            // Display score
-            score_str = scoreString(score);
-            txt_score = TTF_RenderText_Blended(font, score_str, white);
-            tex = SDL_CreateTextureFromSurface(rend, txt_score);
-            Rect_Score.w = txt_score->w;
-            Rect_Score.h = txt_score->h;
-            SDL_FreeSurface(txt_score);
-            SDL_RenderCopy(rend, tex, NULL, &Rect_Score);
-            SDL_DestroyTexture(tex);
+    //         // Display score
+    //         score_str = scoreString(score);
+    //         txt_score = TTF_RenderText_Blended(font, score_str, white);
+    //         tex = SDL_CreateTextureFromSurface(rend, txt_score);
+    //         Rect_Score.w = txt_score->w;
+    //         Rect_Score.h = txt_score->h;
+    //         SDL_FreeSurface(txt_score);
+    //         SDL_RenderCopy(rend, tex, NULL, &Rect_Score);
+    //         SDL_DestroyTexture(tex);
 
-            // Display mainlist
-            Maillon * m = mainlist->first;
+    //         // Display mainlist
+    //         Maillon * m = mainlist->first;
 
-            for(int i = 0; i<mainlist->length; i++){
-                colorFromNumber((m->f->col)*d_col, &r, &g, &b);
-                x = (WIDTH-(mainlist->length)*60)/2+i*60+30;
-                y = HEIGHT/2;
-                drawpoly(rend, m->f->type+3, x, y, 50, r, g, b);
-                if (m->f->type > 3){
-                    draw_edges_number(rend, fontSmall, m->f->type+3, x, y);
-                }
-                m = m->next;
-            }
+    //         for(int i = 0; i<mainlist->length; i++){
+    //             colorFromNumber((m->f->col)*d_col, &r, &g, &b);
+    //             x = (WIDTH-(mainlist->length)*60)/2+i*60+30;
+    //             y = HEIGHT/2;
+    //             drawpoly(rend, m->f->type+3, x, y, 50, r, g, b);
+    //             if (m->f->type > 3){
+    //                 draw_edges_number(rend, fontSmall, m->f->type+3, x, y);
+    //             }
+    //             m = m->next;
+    //         }
 
-            // Display next piece
-            colorFromNumber((next[0]->col)*d_col, &r, &g, &b);
-            x = (WIDTH)/2;
-            y = HEIGHT-140;
-            drawpoly(rend, next[0]->type+3, x, y, 70, r, g, b);
-            if (next[0]->type > 3){
-                draw_edges_number(rend, fontSmall, next[0]->type+3, x, y);
-            }
+    //         // Display next piece
+    //         colorFromNumber((next[0]->col)*d_col, &r, &g, &b);
+    //         x = (WIDTH)/2;
+    //         y = HEIGHT-140;
+    //         drawpoly(rend, next[0]->type+3, x, y, 70, r, g, b);
+    //         if (next[0]->type > 3){
+    //             draw_edges_number(rend, fontSmall, next[0]->type+3, x, y);
+    //         }
 
-            // Display next 4 pieces
-            for(int i = 1; i<5; i++){
-                colorFromNumber((next[i]->col)*d_col, &r, &g, &b);
-                x = (WIDTH-60)/2+i*60+50;
-                y = HEIGHT-100;
-                drawpoly(rend, next[i]->type+3, x, y, 50, r, g, b);
-                if (next[i]->type > 3){
-                    draw_edges_number(rend, fontSmall, next[i]->type+3, x, y);
-                }
-            }
-            SDL_RenderCopy(rend, tex_next, NULL, &rect_Next);
+    //         // Display next 4 pieces
+    //         for(int i = 1; i<5; i++){
+    //             colorFromNumber((next[i]->col)*d_col, &r, &g, &b);
+    //             x = (WIDTH-60)/2+i*60+50;
+    //             y = HEIGHT-100;
+    //             drawpoly(rend, next[i]->type+3, x, y, 50, r, g, b);
+    //             if (next[i]->type > 3){
+    //                 draw_edges_number(rend, fontSmall, next[i]->type+3, x, y);
+    //             }
+    //         }
+    //         SDL_RenderCopy(rend, tex_next, NULL, &rect_Next);
 
-            for (int i = 0; i<n_col; i++){
-                // char txt[2];
-                // *txt = '1' + (char)i;
-                // SDL_RenderDrawText(rend, font, i*40+50, 550, txt);
-                colorFromNumber(i*d_col, &r, &g, &b);
-                aacircleRGBA(rend, i*50+50, 550, 15, r, g, b, 255);
-                filledCircleRGBA(rend, i*50+50, 550, 15, r, g, b, 255);
-            }
+    //         for (int i = 0; i<n_col; i++){
+    //             // char txt[2];
+    //             // *txt = '1' + (char)i;
+    //             // SDL_RenderDrawText(rend, font, i*40+50, 550, txt);
+    //             colorFromNumber(i*d_col, &r, &g, &b);
+    //             aacircleRGBA(rend, i*50+50, 550, 15, r, g, b, 255);
+    //             filledCircleRGBA(rend, i*50+50, 550, 15, r, g, b, 255);
+    //         }
 
-            for (int i = 0; i<n_col; i++){
-                // char txt[2];
-                // *txt = '1' + (char)i;
-                // SDL_RenderDrawText(rend, font, i*40+50, 550, txt);
-                drawpoly(rend, i+3, i*50+50, 600, 35, 255, 255, 255);
-                draw_edges_number(rend, fontSmall, i+3, i*50+50, 630);
-            }
+    //         for (int i = 0; i<n_col; i++){
+    //             // char txt[2];
+    //             // *txt = '1' + (char)i;
+    //             // SDL_RenderDrawText(rend, font, i*40+50, 550, txt);
+    //             drawpoly(rend, i+3, i*50+50, 600, 35, 255, 255, 255);
+    //             draw_edges_number(rend, fontSmall, i+3, i*50+50, 630);
+    //         }
 
-            update = 0;
-        }
+    //         update = 0;
+    //     }
 
-        if (mainlist->length>=max_shapes){
-            running = 0;
-        }
+    //     if (mainlist->length>=max_shapes){
+    //         running = 0;
+    //     }
 
-        SDL_RenderPresent(rend);
-        SDL_Delay(1000/FPS);
-    }
+    //     SDL_RenderPresent(rend);
+    //     SDL_Delay(1000/FPS);
+    // }
+    // for (int i = 0; i<5; i++){
+    //     free(next[i]);
+    //     if (ID[i] != NULL){
+    //         free(ID[i]);
+    //     }
+    // }
     return 0;
 }
 
@@ -265,8 +264,8 @@ int mainMenuSDL(void){
         printf("L'icône n'a pas pu être chargée! SDL_Error: %s\n", SDL_GetError());
         return 1;
     }
-
     SDL_SetWindowIcon(wind, icon);
+    SDL_FreeSurface(icon);
 
     SDL_Rect rect_Title;
     TTF_Font * fontBig = TTF_OpenFont("./Assets/Fonts/VeniteAdoremus-rgRBA.ttf", 72);
@@ -305,6 +304,7 @@ int mainMenuSDL(void){
     SDL_Surface * sha_sur;
 
     char running = 1;
+    char quit = 0;
     SDL_Event event;
 
     while (running){
@@ -313,8 +313,8 @@ int mainMenuSDL(void){
             switch (event.type)
             {
                 case SDL_QUIT:
-                    goto ici;
                     running = 0;
+                    quit = 1;
                     break;
                 case SDL_KEYDOWN:
                     switch (event.key.keysym.scancode) {
@@ -383,11 +383,16 @@ int mainMenuSDL(void){
 
         SDL_RenderPresent(rend);
         SDL_Delay(1000/60);
+
+        
     }
+    SDL_DestroyTexture(right_arrow);
+    SDL_DestroyTexture(left_arrow);
     SDL_DestroyTexture(tex_title);
     SDL_DestroyTexture(tex);
-    mainLoopSDL(rend, n_col, n_sha, 15);
-ici:
+    if (!quit){
+        mainLoopSDL(rend, n_col, n_sha, 15);
+    }
     SDL_DestroyWindow(wind);
     SDL_DestroyRenderer(rend);
     SDL_Quit();
@@ -398,8 +403,10 @@ void mainloopASCII(char debug){
     int n_color = 4;
     int n_shape = 4;
 
-    colList = malloc(sizeof(MListe *) * n_color);
-    shapList = malloc(sizeof(MListe *) * n_shape);
+    Liste ** colList = malloc(sizeof(Liste *) * n_color);
+    Liste ** shapList = malloc(sizeof(Liste *) * n_shape);
+
+    Liste * mainlist = getList();
 
     for (int i = 0; i< n_color; i++){
         colList[i] = getList();
@@ -416,9 +423,9 @@ void mainloopASCII(char debug){
     char insert = 0;
     char side = 0;
 
-    Forme ** ID = malloc(5*sizeof(Forme *));
+    Forme * ID[5];
 
-    Forme ** next = malloc(5*sizeof(Forme *));
+    Forme * next[5];
 
     for (int i = 0; i<5; i++){
         next[i] = getRandForme(n_shape, n_color);
@@ -498,8 +505,7 @@ void mainloopASCII(char debug){
             if (!insert && nscore > 0){
                 score += 2; // bonus 2 points if rotation
             }
-            remAllListe(ID, nscore, n_color, n_shape);
-            //printf("%d", nscore);
+            remAllListe(ID, mainlist, colList, shapList, nscore, n_color, n_shape);
         }
     }
 
@@ -507,26 +513,40 @@ void mainloopASCII(char debug){
 
     for (int i = 0; i<5; i++){
         free(next[i]);
+        // if (ID[i] != NULL){
+        //     free(ID[i]);
+        // }
     }
-    free(next);
-
-    free(ID);
+    for (int i = 0; i < n_shape; i++){
+        freeListe(shapList[i]);
+    }
+    //free(shapList);
+    for (int i = 0; i < n_color; i++){
+        freeListe(colList[i]);
+    }
+    free(shapList);
+    free(colList);
+    //free(colList);
+    freeMainListe(mainlist);
 }
 
 void debug(){
     setupConsole();
-    mainlist = getList();
-    Forme * f;
-    f = getRandForme(4, 4);
-    appendMainListe(mainlist, f, 1);
-    f = getRandForme(4, 4);
-    appendMainListe(mainlist, f, 1);
-    //mainlist->first->prev->mainID = 2;
-    f = getRandForme(4, 4);
-    printList(mainlist);
-    printf("\n");
-    appendListeID(mainlist, f, 2);
-    printList(mainlist);
+
+    // Liste * mainlist = getList();
+
+    // // f = getRandForme(4, 4);
+    // appendMainListe(mainlist, getRandForme(4, 4), 1);
+
+    // // f = getRandForme(4, 4);
+    // appendMainListe(mainlist, getRandForme(4, 4), 1);
+
+    // //mainlist->first->prev->mainID = 2;
+    // printList(mainlist);
+    // restoreConsole();
+
+    // freeMainListe(mainlist);
+
     restoreConsole();
 }
 
@@ -537,10 +557,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    mainlist = getList();
-
-    time_t t = time(NULL);
-    srand(t);
+    srand(time(NULL));
 
     if (!strcmp(argv[1], "ASCII")){
         setupConsole();
@@ -552,13 +569,6 @@ int main(int argc, char *argv[]) {
         restoreConsole();
     } else if (!strcmp(argv[1], "SDL")){
         mainMenuSDL();
-    } else {
-        debug();
     }
-
-    freeListe(mainlist);
-
-    free(mainlist);
-
     return 0;
 }

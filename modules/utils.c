@@ -8,6 +8,7 @@
 #include "../SDL2_gfx/SDL2_gfxPrimitives.h"
 #include "../SDL2/include/SDL2/SDL_image.h"
 #include "../SDL2/include/SDL2/SDL_ttf.h"
+#include <string.h>
 
 #define pi 3.1415926535897932384626433832795
 
@@ -55,6 +56,8 @@ void printList(Liste * l){
         m = m->next;
     }
 }
+
+#ifdef _WIN32
 
 void printState(Liste * mainlist, int score, Forme ** next){
     char types[] = "TRCL";
@@ -151,7 +154,102 @@ void printState(Liste * mainlist, int score, Forme ** next){
     }
     printf("\xb4\n");
     printf("\x1b[0m\n");
+    printf("\n");
 }
+
+#else
+
+void printState(Liste * mainlist, int score, Forme ** next){
+    char types[] = "TRCL";
+    printf("\033[2J\033[0;0H\u250c");
+    for (int i = 0; i < 69; i++){
+        printf("\u2500");
+    }
+    printf("\u2510\n\u2502");
+    for (int i = 0; i < 31; i++){
+        printf(" ");
+    }
+    printf("Score : %d", score);
+    for (int i = 0; i< 30-max((floor(log10(score))+1), 1); i++){
+        printf(" ");
+    }
+    printf("\u2502\n\u251c");
+    for (int i = 0; i < 69; i++){
+        printf("\u2500");
+    }
+    printf("\u253c");
+    for (int i = 0; i<19; i++){
+        printf("\u2500");
+    }
+    printf("\u2510\n\u2502");
+    for (int i = 0; i<69; i++){
+        printf(" ");
+    }
+    printf("\u2502 Keybinds :        \u2502\n\u2502");
+    for (int i = 0; i<69; i++){
+        printf(" ");
+    }
+    printf("\u2502 g - Insert left   \u2502\n\u2502");
+    for (int i = 0; i < 35-mainlist->length; i++){
+        printf(" ");
+    }
+    printList(mainlist);
+    for (int i = 0; i < 34-mainlist->length; i++){
+        printf(" ");
+    }
+    printf("\u2502 d - Insert right  \u2502\n\u2502");
+    for (int i = 0; i<69; i++){
+        printf(" ");
+    }
+    printf("\u2502 c - Rotate colors \u2502\n\u2502");
+    for (int i = 0; i<69; i++){
+        printf(" ");
+    }
+    printf("\u2502 f - Rotate shapes \u2502\n");
+
+    printf("\u251c");
+    for (int i = 0; i < 69; i++){
+        printf("\u2500");
+    }
+    printf("\u253c");
+    for (int i = 0; i<19; i++){
+        printf("\u2500");
+    }
+    printf("\u2518\n\u2502");
+    for (int i = 0; i < 34; i++){
+        printf(" ");
+    }
+    printf("\u25BC");
+    for (int i = 0; i < 34; i++){
+        printf(" ");
+    }
+    printf("\u2502\n\u2502");
+    for (int i = 0; i < 32; i++){
+        printf(" ");
+    }
+    printf("\u25B6 \033[3%dm%c\x1b[0m \u25C0  Next : \x1b[0m", next[0]->col+1, types[(int)next[0]->type]);
+    for (int i = 1; i<5; i++){
+        printf("\033[3%dm%c\x1b[0m ", next[i]->col+1, types[(int)next[i]->type]);
+    }
+    for (int i = 0; i < 15; i++){
+        printf(" ");
+    }
+    printf("\u2502\n\u2502");
+    for (int i = 0; i < 34; i++){
+        printf(" ");
+    }
+    printf("\u25B2");
+    for (int i = 0; i < 34; i++){
+        printf(" ");
+    }
+    printf("\u2502\n\u2514");
+    for (int i = 0; i < 69; i++){
+        printf("\u2500");
+    }
+    printf("\u2518\n");
+}
+
+#endif
 
 void getForme(char type, char col, Forme * f){
     // Useless
@@ -347,7 +445,7 @@ void rotateMlist4(Liste * mainlist, Liste * rot, Liste ** collist, Liste ** shap
         while (m->f != iter->f){
             m = m->next;
         }
-        
+
         printf("m->f:%p iter->f:%p m:%p - ", m->f, iter->f, m);
         m->f = iter->next->f;
         printf("m->f:%p iter->next->f%p m:%p\n", m->f, iter->next->f, m);
@@ -419,16 +517,31 @@ int checkListe(Liste * l, Forme ** ID){
 
 
 
-void freeListe(Liste* l){
-    // Free each Maillon of a given Liste
-    Maillon * m = l->first->next;
-    for (int i = 0; i < l->length-1; i++){
-        m = m->next;
-        free(m->prev->f);
-        free(m->prev);
+void freeMainListe(Liste* l) {
+    // Free each Maillon of a given Liste (circular)
+    Maillon *m = l->first;
+    Maillon *next;
+    for (int i = 0; i<l->length-1; i++) {
+        next = m->next;
+        free(m->f);
+        free(m);
+        m = next;
     }
-    free(l->first->f);
-    free(l->first);
+    free(m);
+    free(l);
+}
+
+void freeListe(Liste* l) {
+    // Free each Maillon of a given Liste (circular)
+    Maillon *m = l->first;
+    Maillon *next;
+    for (int i = 0; i < l->length-1; i++) {
+        next = m->next;
+        free(m);
+        m = next;
+    }
+    free(m);
+    free(l);
 }
 
 //

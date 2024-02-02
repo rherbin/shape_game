@@ -3,6 +3,7 @@
 #include "../SDL2_gfx/SDL2_gfxPrimitives.h"
 #include "../SDL2/include/SDL2/SDL_image.h"
 #include "../SDL2/include/SDL2/SDL_ttf.h"
+#include <string.h>
 
 typedef struct forme{
     char type; //R = ROND, C = CARRE, L = LOSANGE, T = TRIANGLE
@@ -47,6 +48,7 @@ void remMainListe(Liste * l, Forme * rem);
 //void rotateMList(Liste * mainliste, MListe * l);
 void rotateMlist4(Liste * mainlist, Liste * rot, Liste ** collist, Liste ** shaplist, int n_col, int n_shap);
 int checkListe(Liste * l, Forme ** ID);
+void freeMainListe(Liste* l);
 void freeListe(Liste* l);
 
 char * intToString(int n);

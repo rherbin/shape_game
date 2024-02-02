@@ -1,6 +1,10 @@
 {
     "files.associations": {
         "cmath": "c",
-        "sdl2_gfxprimitives.h": "c"
+        "sdl2_gfxprimitives.h": "c",
+        "sdl_ttf.h": "c",
+        "ansi_escape.h": "c",
+        "utils.h": "c",
+        "sdl_image.h": "c"
     }
 }
