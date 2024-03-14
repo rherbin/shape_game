@@ -21,37 +21,15 @@
 //
 //
 
-int getVal(Forme * f){
-    int val = 0;
-    switch (f->type){
-        case 'R':
-            val += 0;
-            break;
-        case 'C':
-            val += 1;
-            break;
-        case 'L':
-            val += 2;
-            break;
-        case 'T':
-            val += 3;
-            break;
-        default:
-            break;
-    }
-    val += (f->col-1)*4;
-    return val;
-}
-
 void printList(Liste * l){
-    // Print each Forme of a given Liste with ansi escape
-    char types[] = "TRCL";
+    // Print each Piece of a given Liste with ansi escape
+    char shapes[] = "TRCL";
     if (l->length == 0){
         return;
     }
     Maillon * m = l->first;
     for (int i = 0; i<l->length; i++){
-        printf("\033[3%dm%c\x1b[0m ", m->f->col+1, types[(int)m->f->type]);
+        printf("\033[3%dm%c\x1b[0m ", m->f->col+1, shapes[(int)m->f->shape]);
         //printf("m->f:%p m:%p", m->f, m);
         m = m->next;
     }
@@ -59,8 +37,8 @@ void printList(Liste * l){
 
 #ifdef _WIN32
 
-void printState(Liste * mainlist, int score, Forme ** next){
-    char types[] = "TRCL";
+void printState(Liste * mainlist, int score, Piece ** next){
+    char shapes[] = "TRCL";
     printf("\033[2J");
     printf("\033[0;0H");
     printf("\xda");
@@ -132,9 +110,9 @@ void printState(Liste * mainlist, int score, Forme ** next){
     for (int i = 0; i < 32; i++){
         printf(" ");
     }
-    printf("\x10 \033[3%dm%c\x1b[0m \x11  Next : \x1b[0m", next[0]->col+1, types[(int)next[0]->type]);
+    printf("\x10 \033[3%dm%c\x1b[0m \x11  Next : \x1b[0m", next[0]->col+1, shapes[(int)next[0]->shape]);
     for (int i = 1; i<5; i++){
-        printf("\033[3%dm%c\x1b[0m ", next[i]->col+1, types[(int)next[i]->type]);
+        printf("\033[3%dm%c\x1b[0m ", next[i]->col+1, shapes[(int)next[i]->shape]);
     }for (int i = 0; i < 15; i++){
         printf(" ");
     }
@@ -159,8 +137,8 @@ void printState(Liste * mainlist, int score, Forme ** next){
 
 #else
 
-void printState(Liste * mainlist, int score, Forme ** next){
-    char types[] = "TRCL";
+void printState(Liste * mainlist, int score, Piece ** next){
+    char shapes[] = "TRCL";
     printf("\033[2J\033[0;0H\u250c");
     for (int i = 0; i < 69; i++){
         printf("\u2500");
@@ -227,9 +205,9 @@ void printState(Liste * mainlist, int score, Forme ** next){
     for (int i = 0; i < 32; i++){
         printf(" ");
     }
-    printf("\u25B6 \033[3%dm%c\x1b[0m \u25C0  Next : \x1b[0m", next[0]->col+1, types[(int)next[0]->type]);
+    printf("\u25B6 \033[3%dm%c\x1b[0m \u25C0  Next : \x1b[0m", next[0]->col+1, shapes[(int)next[0]->shape]);
     for (int i = 1; i<5; i++){
-        printf("\033[3%dm%c\x1b[0m ", next[i]->col+1, types[(int)next[i]->type]);
+        printf("\033[3%dm%c\x1b[0m ", next[i]->col+1, shapes[(int)next[i]->shape]);
     }
     for (int i = 0; i < 15; i++){
         printf(" ");
@@ -251,18 +229,12 @@ void printState(Liste * mainlist, int score, Forme ** next){
 
 #endif
 
-void getForme(char type, char col, Forme * f){
-    // Useless
-    f->col = col;
-    f->type = type;
-    //return f;
-}
+Piece * getRandPiece(int n_shapes, int n_colors){
+    // Get a Piece with a random shape and color
+    Piece * f = malloc(sizeof(Piece));
 
-Forme * getRandForme(int n_formes, int n_colors){
-    // Get a Forme with a random type and color
-    Forme * f = malloc(sizeof(Forme));
-
-    getForme(rand()%n_formes, rand()%n_colors, f);
+    f->col = rand()%n_colors;
+    f->shape = rand()%n_shapes;
     return f;
 }
 
@@ -274,7 +246,8 @@ Liste * getList(void){
     return l;
 }
 
-void appendListeID(Liste * l, Forme * f, int mainID){
+void appendListeID(Liste * l, Piece * f, int mainID){
+    // Insert Piece in Liste according to the mainID provided
     Maillon * m = malloc(sizeof(Maillon));
     m->f = f;
     m->mainID = mainID;
@@ -314,8 +287,8 @@ void appendListeID(Liste * l, Forme * f, int mainID){
     return;
 }
 
-Maillon * appendMainListe(Liste * l, Forme * f, char pos){
-    // Create a new Maillon pointing to a given Forme and append it to the beginning or the end of a given Liste
+void appendListe(Liste * l, Piece * f, char pos){
+    // Create a new Maillon pointing to a given Piece and append it to the beginning or the end of a given Liste
     Maillon * m = malloc(sizeof(Maillon));
     m->f = f;
     if (l->length == 0){
@@ -324,7 +297,7 @@ Maillon * appendMainListe(Liste * l, Forme * f, char pos){
         m->prev = m;
         m->mainID = 0;
         l->length++;
-        return m;
+        return;
     }
     m->next = l->first;
     m->prev = l->first->prev;
@@ -337,12 +310,11 @@ Maillon * appendMainListe(Liste * l, Forme * f, char pos){
         m->mainID = m->prev->mainID+1;
     }
     l->length++;
-    return m;
+    return;
 }
 
-void remListe(Liste * l, Forme * rem){
-    // Remove any Maillon pointing to a given Forme from a given Liste
-
+void remListe(Liste * l, Piece * rem){
+    // Remove any Maillon pointing to a given Piece from a given Liste
     if (l->length == 0){
         return;
     }
@@ -418,9 +390,9 @@ void rotateMlist(Liste * mainlist, Liste * rot, Liste ** collist, Liste ** shapl
 
         if (rot->type == 0){
             // printf("av ");
-            remListe(shaplist[(int)m->f->type], m->f);
+            remListe(shaplist[(int)m->f->shape], m->f);
             // printf("ap ");
-            appendListeID(shaplist[(int)m->f->type], m->f, m->mainID);
+            appendListeID(shaplist[(int)m->f->shape], m->f, m->mainID);
             // printf("ad ");
         } else {
             // printf("av ");
@@ -435,7 +407,7 @@ void rotateMlist(Liste * mainlist, Liste * rot, Liste ** collist, Liste ** shapl
     rot->first = rot->first->next;
 }
 
-void rotateMlist4(Liste * mainlist, Liste * rot, Liste ** collist, Liste ** shaplist, int n_col, int n_shap){
+void rotateMList4(Liste * mainlist, Liste * rot, Liste ** collist, Liste ** shaplist, int n_col, int n_shap){
     if (rot->length <= 1){
         return;
     }
@@ -446,30 +418,30 @@ void rotateMlist4(Liste * mainlist, Liste * rot, Liste ** collist, Liste ** shap
             m = m->next;
         }
 
-        printf("m->f:%p iter->f:%p m:%p - ", m->f, iter->f, m);
+        // printf("m->f:%p iter->f:%p m:%p - ", m->f, iter->f, m);
         m->f = iter->next->f;
-        printf("m->f:%p iter->next->f%p m:%p\n", m->f, iter->next->f, m);
+        // printf("m->f:%p iter->next->f%p m:%p\n", m->f, iter->next->f, m);
 
         iter = iter->next;
         m = m->next;
     }
-    printf("éo");
+    // printf("éo");
     for (int i = 0; i < n_col; i++){
         clearList(collist[i]);
     }
     for (int i = 0; i < n_shap; i++){
         clearList(shaplist[i]);
     }
-    printf("éa");
+    // printf("éa");
     m = mainlist->first;
     for (int i = 0; i < mainlist->length; i++){
-        appendMainListe(collist[(int)m->f->col], m->f, 1);
-        appendMainListe(shaplist[(int)m->f->type], m->f, 1);
+        appendListe(collist[(int)m->f->col], m->f, 1);
+        appendListe(shaplist[(int)m->f->shape], m->f, 1);
         m = m->next;
     }
 }
 
-int checkListe(Liste * l, Forme ** ID){
+int checkListe(Liste * l, Piece ** ID){
     if (l->length == 0){
         return 0;
     }
@@ -492,13 +464,13 @@ int checkListe(Liste * l, Forme ** ID){
             prevC = m->f->col;
         }
 
-        if (m->f->type == prevT){
+        if (m->f->shape == prevT){
             simT++;
         } else if (simT >= 3) {
             return simT;
         } else {
             simT = 1;
-            prevT = m->f->type;
+            prevT = m->f->shape;
         }
 
         for (int i = 0; i<4; i++){
@@ -514,8 +486,6 @@ int checkListe(Liste * l, Forme ** ID){
     }
     return 0;
 }
-
-
 
 void freeMainListe(Liste* l) {
     // Free each Maillon of a given Liste (circular)
@@ -544,6 +514,56 @@ void freeListe(Liste* l) {
     free(l);
 }
 
+void savegame(Liste * mainlist, Piece ** next, int score, int n_col, int n_shap, int max_piece){
+    FILE * f = fopen("save.txt", "w");
+    fprintf(f, "%d %d %d %d ", score, max_piece, n_col, n_shap);
+    for (int i = 0; i < 5; i++){
+        fprintf(f, "%d ", next[i]->col*n_shap+next[i]->shape);
+    }
+    Maillon * m = mainlist->first;
+    for (int i = 0; i<mainlist->length; i++){
+        fprintf(f, "%d ", m->f->col*n_shap+m->f->shape);
+        m = m->next;
+    }
+    fclose(f);
+}
+
+void loadgame(Liste * mainlist, Piece ** next, int * score, int * n_col, int * n_shap, int * max_piece){
+    FILE * f = fopen("save.txt", "r");
+    char line[70];
+    fgets(line, 70, f);
+    char * p_save = strtok(line, " ");
+    *score = atoi(p_save);
+    p_save = strtok(NULL, " ");
+    *max_piece = atoi(p_save);
+    p_save = strtok(NULL, " ");
+    *n_col = atoi(p_save);
+    p_save = strtok(NULL, " ");
+    *n_shap = atoi(p_save);
+    Piece * p;
+    int p_id;
+    for (int i = 0; i < 5; i++){
+        p_save = strtok(NULL, " ");
+        printf("%s ", p_save);
+        p = malloc(sizeof(Piece));
+        p_id = atoi(p_save);
+        p->shape = p_id%(*n_shap);
+        p->col = p_id/(*n_shap);
+        next[i] = p;
+    }
+    p_save = strtok(NULL, " ");
+    while (p_save != NULL){
+        printf("%s ", p_save);
+        p = malloc(sizeof(Piece));
+        p_id = atoi(p_save);
+        p->shape = p_id%(*n_shap);
+        p->col = p_id/(*n_shap);
+        appendListe(mainlist, p, 1);
+        p_save = strtok(NULL, " ");
+    }
+    fclose(f);
+}
+
 //
 //
 // SDL FUNCTIONS
@@ -568,11 +588,26 @@ char * scoreString(int n){
     if (n == 0){
         return "Score : 0";
     }
-    int size = 8+ceil(log10(n));
+    int size = 8+floor(log10(n))+1;
     char * res = malloc(size+1);
     strcpy(res, "Score : ");
     char * strAAAAA = intToString(n);
     strcat(res, strAAAAA);
+    free(strAAAAA);
+    res[size] = '\0';
+    return res;
+}
+
+char * shapeString(int n){
+    if (n == 0){
+        return "Shapes : 0";
+    }
+    int size = 9+floor(log10(n))+1;
+    char * res = malloc(size+1);
+    strcpy(res, "Shapes : ");
+    char * strAAAAA = intToString(n);
+    strcat(res, strAAAAA);
+    free(strAAAAA);
     res[size] = '\0';
     return res;
 }
@@ -650,7 +685,10 @@ void aathickLineRGBA(SDL_Renderer * rend, int x1, int y1, int x2, int y2, int th
 
     // Draw an anti aliased empty polygon then fill it with a normal tick line
     thickLineRGBA(rend, x1, y1, x2, y2, thickness, r, g, b, a);
-    //aapolygonRGBA(rend, x, y, 4, r, g, b, a);
+    aapolygonRGBA(rend, x, y, 4, r, g, b, a);
+
+    free(x);
+    free(y);
 }
 
 void drawpoly(SDL_Renderer * rend, int sides, int x, int y, int size, int r, int g, int b){
@@ -711,19 +749,32 @@ void SDL_RenderDrawText(SDL_Renderer * rend, TTF_Font * font, int x, int y, char
     SDL_RenderCopy(rend, tex, NULL, &rect);
 }
 
-int save(int score, int n_shape, int int_col, int max_shape, Liste * mainlist, Forme ** next){
-    // score n_col n_shape max_shape next * 5 mainlist
+int loadscore(int scores[10], char * initiales[4]){
+    FILE * f = fopen("score.txt", "w");
+    for (int i = 0; i<10; i++){
+        fprintf(f, "%d %s\n", scores[i], initiales[i]);
+    }
+    fclose(f);
     return 0;
 }
 
-int * load(Liste * mainlist, Forme ** next){
-    return NULL;
-}
-
-int highscore(int score){
-    return 0;
-}
-
-int loadscore(int score, char * initiale){
-    return 0;
+int getScores(int scores[10], char * initiales[4]){
+    FILE * f = fopen("score.txt", "r");
+    char buffer[10];
+    int line = 0;
+    while (fgets(buffer, 10, f)){
+        int i = 0;
+        scores[line] = 0;
+        for (; buffer[i] != ' '; i++){
+            scores[line] *= 10;
+            scores[line] += buffer[i]-'0';
+        }
+        i++;
+        for (int j = 0; j < 3; j++){
+            initiales[line][j] = buffer[i+j];
+        }
+        initiales[line][3] = 0;
+        line++;
+    }
+    return line;
 }

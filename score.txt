@@ -1,2 +1,10 @@
 523 ABC
-433 CAC
+512 LOL
+433 COS
+313 SIN
+112 ADC
+98 DAN
+76 ROD
+9 aaa
+9 ray
+6 aaa

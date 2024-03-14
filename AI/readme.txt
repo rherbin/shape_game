@@ -1,0 +1,1 @@
+Essai d'une IA avec apprentissage par renforcement, le code marche mais l'IA n'a jamais appris. Jouer au hasard donne un score similaire.
