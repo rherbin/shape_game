@@ -1,0 +1,1 @@
+2nd year C programming class project. Small game made available in an ASCII version playable on the command prompt and in a graphic version using the SDL library.
